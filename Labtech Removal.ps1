@@ -1,13 +1,14 @@
 <#
 .SYNOPSIS
-    This script is designed to uninstall all products whose name starts with 'labtech',
-    stop and delete the 'ltservice' and 'ltsvcmon' services, delete specific registry keys,
-    and remove the 'C:\Windows\LTSvc' directory.
+    This script is designed to uninstall all products whose name starts with 'labtech' or 'ScreenConnect Client',
+    stop, disable and delete the 'ltservice', 'ltsvcmon', and 'labvnc' services, kill 'LTTray.exe' process,
+    delete specific registry keys, and remove the 'C:\Windows\LTSvc' directory.
 
 .DESCRIPTION
-    The script first identifies and uninstalls all products with names beginning with 'labtech'.
-    It then stops and deletes the 'ltservice' and 'ltsvcmon' services.
-    Next, it removes two specified registry keys and all their sub-keys and values.
+    The script first identifies and uninstalls all products with names beginning with 'labtech' or 'ScreenConnect Client'.
+    It then stops, disables and deletes the 'ltservice', 'ltsvcmon', and 'labvnc' services.
+    Next, it kills 'LTTray.exe' process if it is running.
+    Afterward, it removes two specified registry keys and all their sub-keys and values.
     Lastly, it checks if the 'C:\Windows\LTSvc' directory exists and, if it does, removes it and all its contents.
 
     Please run this script with administrative privileges as it performs operations that require elevated permissions.
@@ -16,22 +17,23 @@
 
 .NOTES
     Author: Kierston Grantham
-    Date Created: 06/14/2023
+    Date Created: 14/06/2023
 #>
 
-# Uninstall products with 'labtech' in the name
-$products = Get-WmiObject -Query "SELECT * FROM Win32_Product WHERE (Name LIKE 'labtech%')"
+# Uninstall products with 'labtech' or 'ScreenConnect Client' in the name
+$products = Get-WmiObject -Query "SELECT * FROM Win32_Product WHERE (Name LIKE 'labtech%') OR (Name LIKE 'ScreenConnect Client%')"
 foreach ($product in $products) {
     Write-Host "Uninstalling $($product.Name)"
     $product.Uninstall()
 }
 
-# Stop and delete services
-$services = "ltservice", "ltsvcmon"
+# Stop, disable and delete services
+$services = "ltservice", "ltsvcmon", "labvnc"
 foreach ($service in $services) {
-    Write-Host "Stopping $service"
+    Write-Host "Stopping and disabling $service"
     try {
         Stop-Service $service -ErrorAction Stop
+        Set-Service $service -StartupType Disabled
     } catch {
         Write-Host "$service not running or does not exist."
     }
@@ -42,6 +44,13 @@ foreach ($service in $services) {
     } catch {
         Write-Host "Failed to delete $service"
     }
+}
+
+# Kill LTTray.exe process
+try {
+    Get-Process LTTray -ErrorAction Stop | Stop-Process -Force
+} catch {
+    Write-Host "LTTray process not running or does not exist."
 }
 
 # Remove registry keys
