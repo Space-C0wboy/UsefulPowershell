@@ -13,7 +13,7 @@
 #>
 
 # Initialize log file
-$logFile = "C:\Hosted\ScriptLog.txt"
+$logFile = "C:\logging\ScriptLog.txt"
 
 # Specify matching sub-key
 $subKeyMatch = "Mount Path"
